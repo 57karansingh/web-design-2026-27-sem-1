@@ -1,0 +1,213 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CampusBuddy | Student Dashboard</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Arial,sans-serif;
+  background:#f5f6fc;color:#20233a
+}
+header{
+  background:#fff;padding:20px 7%;
+  display:flex;justify-content:space-between;
+  align-items:center;box-shadow:0 2px 12px #20233a0a
+}
+.logo{font-size:23px;font-weight:800;color:#6558d9}
+header span{color:#777;font-size:13px}
+main{max-width:1000px;margin:35px auto;padding:0 20px}
+.hero{
+  background:linear-gradient(120deg,#6558d9,#9588f5);
+  color:white;padding:30px;border-radius:20px
+}
+.hero h1{margin:0 0 10px;font-size:30px}
+.hero p{line-height:1.6}
+.stats{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:15px;margin:22px 0
+}
+.card,.taskbox{
+  background:white;padding:20px;border-radius:15px;
+  box-shadow:0 4px 18px #20233a08
+}
+.stat{font-size:28px;font-weight:bold;margin-top:12px}
+.muted{color:#777;font-size:13px}
+h2{font-size:20px}
+form{display:flex;gap:10px;margin-bottom:20px}
+input{
+  min-width:0;flex:1;padding:13px;border:1px solid #ddd;
+  border-radius:9px;font-size:14px
+}
+button{
+  border:0;border-radius:9px;padding:12px 17px;
+  background:#63c763;color:white;font-weight:bold;
+  cursor:pointer
+}
+button:hover{opacity:.85}
+.filters{display:flex;gap:8px;margin-bottom:15px}
+.filters button{background:#eeecff;color:#6558d9}
+.filters button.active{background:#6558d9;color:white}
+.task{
+  display:flex;align-items:center;gap:12px;
+  padding:14px 0;border-bottom:1px solid #eee
+}
+.task input{flex:0 0 auto;width:17px;height:17px}
+.task .name{flex:1;overflow-wrap:anywhere}
+.task.done .name{text-decoration:line-through;color:#999}
+.task small{display:block;color:#888;margin-top:5px}
+.delete{background:#fff0f0;color:#c03950;padding:8px}
+footer{text-align:center;padding:30px;color:#888;font-size:13px}
+@media(max-width:600px){
+  .stats{grid-template-columns:1fr}
+  form{flex-wrap:wrap}
+  form input{flex-basis:100%}
+  .hero h1{font-size:25px}
+  header{padding:18px 5%}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">✦ CampusBuddy</div>
+  <span>YOUR STUDENT SPACE</span>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>Make student life simpler. 👋</h1>
+    <p>One small task at a time. Organize your assignments
+    and make room for what matters.</p>
+    <strong id="welcome">Your goals start here.</strong>
+  </section>
+
+  <section class="stats">
+    <div class="card">
+      <div class="muted">Total tasks</div>
+      <div class="stat" id="total">0</div>
+    </div>
+    <div class="card">
+      <div class="muted">Completed</div>
+      <div class="stat" id="completed">0</div>
+    </div>
+    <div class="card">
+      <div class="muted">Progress</div>
+      <div class="stat" id="progress">0%</div>
+    </div>
+  </section>
+
+  <section class="taskbox">
+    <h2>My assignment tracker 📚</h2>
+    <p class="muted">Add your next task and keep moving forward.</p>
+    <form id="taskForm">
+      <input id="taskInput" placeholder="e.g. Finish HTML assignment"
+      maxlength="100" required>
+      <input id="dueDate" type="date" aria-label="Due date">
+      <button type="submit">+ Add task</button>
+    </form>
+    <div class="filters">
+      <button type="button" class="active" data-filter="all">All</button>
+      <button type="button" data-filter="pending">Pending</button>
+      <button type="button" data-filter="done">Completed</button>
+    </div>
+    <div id="taskList"></div>
+    <p class="muted" id="empty">No tasks yet. Add your first one!</p>
+  </section>
+</main>
+
+<footer>Made with 💜 by a student, for students.</footer>
+
+<script>
+const form = document.getElementById("taskForm");
+const input = document.getElementById("taskInput");
+const dateInput = document.getElementById("dueDate");
+const list = document.getElementById("taskList");
+const empty = document.getElementById("empty");
+
+let tasks = [];
+let filter = "all";
+
+form.addEventListener("submit", function(event) {
+  event.preventDefault();
+  tasks.push({
+    id: Date.now() + Math.random(),
+    name: input.value.trim(),
+    date: dateInput.value,
+    done: false
+  });
+  input.value = "";
+  dateInput.value = "";
+  render();
+});
+
+document.querySelectorAll("[data-filter]").forEach(button => {
+  button.addEventListener("click", () => {
+    filter = button.dataset.filter;
+    document.querySelectorAll("[data-filter]").forEach(b =>
+      b.classList.toggle("active", b === button)
+    );
+    render();
+  });
+});
+
+function render() {
+  list.replaceChildren();
+  const visible = tasks.filter(t =>
+    filter === "all" ||
+    (filter === "done" && t.done) ||
+    (filter === "pending" && !t.done)
+  );
+
+  empty.hidden = visible.length > 0;
+  empty.textContent = tasks.length
+    ? "Nothing to show in this filter."
+    : "No tasks yet. Add your first one!";
+
+  visible.forEach(task => {
+    const row = document.createElement("div");
+    row.className = "task" + (task.done ? " done" : "");
+
+    const check = document.createElement("input");
+    check.type = "checkbox";
+    check.checked = task.done;
+    check.setAttribute("aria-label", "Mark task complete");
+    check.addEventListener("change", () => {
+      task.done = check.checked;
+      render();
+    });
+
+    const info = document.createElement("div");
+    info.className = "name";
+    info.append(document.createTextNode(task.name));
+
+    if (task.date) {
+      const date = document.createElement("small");
+      date.textContent = "Due: " + task.date;
+      info.append(date);
+    }
+
+    const del = document.createElement("button");
+    del.className = "delete";
+    del.textContent = "Delete";
+    del.addEventListener("click", () => {
+      tasks = tasks.filter(t => t.id !== task.id);
+      render();
+    });
+
+    row.append(check, info, del);
+    list.append(row);
+  });
+
+  const done = tasks.filter(t => t.done).length;
+  document.getElementById("total").textContent = tasks.length;
+  document.getElementById("completed").textContent = done;
+  document.getElementById("progress").textContent =
+    (tasks.length ? Math.round(done / tasks.length * 100) : 0) + "%";
+}
+
+render();
+</script>
+</body>
+</html>
